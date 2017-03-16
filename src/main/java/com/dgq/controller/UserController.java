@@ -1,12 +1,9 @@
 package com.dgq.controller;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -23,20 +20,19 @@ public class UserController<E> {
 	@RequestMapping("/helloSpringBoot")
 	@ResponseBody
 	public String helloSpringBoot(){
-		return "helloSpringBoot";
+		return "helloSpringBoot-----";
 	}
 	
-	@RequestMapping("/hello/{name}")
-	public String index(@PathVariable String name, Model model){
-		model.addAttribute("name", name);
-		return "index";
-	}
-	
+	/**
+	 * 根据姓名查询用户
+	 * @param name
+	 * @return
+	 */
 	@RequestMapping("/findByName")
 	@ResponseBody
-	public User findByName(String name){
+	public List<User> findByName(String name){
 		
-		User user = userRepository.findByName(name);
+		List<User> user = userRepository.findByName(name);
 		
 		return user;
 	}
@@ -44,29 +40,46 @@ public class UserController<E> {
 	@RequestMapping("/findAll")
 	@ResponseBody
 	public List<User> findAll(){
+		List<User> list = userRepository.findAll();
 		
-		Iterable<User> iterable = userRepository.findAll();
-		List<User> list = new ArrayList<User>();
-		
-		for (User user : iterable) {
-			list.add(user);
-		}
 		return list;
 	}
 	
-	@RequestMapping("/deleteByName")
+	@RequestMapping("/deleteById")
 	@ResponseBody
-	public String deleteByName(long id){
+	public String deleteById(long id){
 		
-		Integer str = userRepository.deleteById(id);
+		userRepository.deleteById(id);
 		
 		return "ok";
 	}
 	
+	/**
+	 * 插入一条数据
+	 * @param name
+	 * @param age
+	 * @return
+	 */
 	@RequestMapping("/insertUser")
 	@ResponseBody
-	public User insertUser(String name, int age){
-		User user = userRepository.save(new User(name, age));
+	public User insertUser(String name, int age, String phone, String address){
+		User user = userRepository.save(new User(name, age, phone, address));
+		return user;
+	}
+	
+	@RequestMapping("/findByNameAndAge")
+	@ResponseBody
+	public List<User> findByNameAndAge(String name, int age){
+		
+		List<User> list = userRepository.findByNameAndAge(name, age);
+	
+		return list;
+	}
+	
+	@RequestMapping("/findByPhone")
+	@ResponseBody
+	public User findByPhone(String phone){
+		User user = userRepository.findByPhone(phone);
 		return user;
 	}
 }
