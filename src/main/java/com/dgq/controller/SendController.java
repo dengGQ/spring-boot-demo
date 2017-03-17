@@ -63,9 +63,8 @@ public class SendController implements RabbitTemplate.ConfirmCallback{
 		String uuid = UUID.randomUUID().toString();
 		
 		CorrelationData correlationId = new CorrelationData(uuid);
-	
-		rabbitTemplate.convertAndSend("logs", "", msg, correlationId);
 		
+		rabbitTemplate.convertAndSend("logs", "", msg, correlationId);
 		
 		return null;
 	}

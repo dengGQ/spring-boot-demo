@@ -1,6 +1,10 @@
 package com.dgq.rabbitMQ;
 
 import java.io.IOException;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 
 import javax.annotation.Resource;
 
@@ -20,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 
+import com.dgq.Task.TaskModel;
 import com.rabbitmq.client.Channel;
 
 /**
@@ -43,6 +48,8 @@ public class RabbitMQConfig {
 	
 	@Resource
 	private Environment env;
+	
+	private ExecutorService executor = Executors.newFixedThreadPool(10);
 	
 	/**
 	 * 配置连接bean
@@ -157,6 +164,7 @@ public class RabbitMQConfig {
 			
 			public void onMessage(Message message, Channel channel) throws Exception {
 				byte[] body = message.getBody();
+				
 				channel.basicQos(1);
 				
 				System.out.println(message.getMessageProperties().getDeliveryTag());
@@ -187,8 +195,8 @@ public class RabbitMQConfig {
 		listenerContainer.setMessageListener(new ChannelAwareMessageListener() {
 			public void onMessage(Message message, Channel channel) throws Exception {
 				
-				task(message, channel);	
-			
+
+				executor.submit(new TaskModel(message, channel));
 			}
 		});
 		

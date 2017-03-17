@@ -3,10 +3,6 @@ package com.dgq.rabbitMQ.Log;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.springframework.format.datetime.DateFormatter;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
