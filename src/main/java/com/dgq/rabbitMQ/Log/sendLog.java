@@ -1,6 +1,5 @@
 package com.dgq.rabbitMQ.Log;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -12,7 +11,7 @@ public class sendLog {
 	// 转发器  
     private final static String EXCHANGE_NAME = "ex_log";
     
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		
 		ConnectionFactory factory = new ConnectionFactory();
 	

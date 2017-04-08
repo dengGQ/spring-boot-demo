@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.dgq.rabbitMQ.RabbitMQConfig;
+import com.dgq.config.RabbitMQConfig;
 
 /**
  * 测试RabbitMQ发送消息的Controller
@@ -18,19 +18,20 @@ import com.dgq.rabbitMQ.RabbitMQConfig;
 @RestController
 public class SendController implements RabbitTemplate.ConfirmCallback{
 	
-	@Autowired
+	
 	private RabbitTemplate rabbitTemplate;
 	
 	/**
-	 * empty constructor
+	 * 构造 注入 rabbitTemplate
+	 * @param rabbitTemplate
 	 */
-	public SendController(){
-	}
-	
-	/*public SendController(RabbitTemplate rabbitTemplate){
+	@Autowired
+	public SendController(RabbitTemplate rabbitTemplate){
 		this.rabbitTemplate = rabbitTemplate;
+		
+		//设置消息消息回调
 		this.rabbitTemplate.setConfirmCallback(this);
-	}*/
+	}
 	
 	/**
 	 * 向消息队列1中发送消息
@@ -39,13 +40,11 @@ public class SendController implements RabbitTemplate.ConfirmCallback{
 	 */
 	@RequestMapping("/send1")
 	public String send1(String msg){
-		//设置消息消息回调
-		rabbitTemplate.setConfirmCallback(this);
 		
 		String uuid = UUID.randomUUID().toString();
 		CorrelationData correlationId = new CorrelationData(uuid);
 		
-		rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTINGKEY1, msg, correlationId);
+		rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE_NAME, RabbitMQConfig.ROUTINGKEY1, msg, correlationId);
 		
 		return null;
 	
@@ -75,8 +74,8 @@ public class SendController implements RabbitTemplate.ConfirmCallback{
 	 */
 	public void confirm(CorrelationData correlationData, boolean ack,
 			String cause) {
-		System.out.println("回调ID: " + correlationData);
-			
+		
+		System.out.println("回调ID: " + correlationData+"----ack:"+ack);
 		if(ack){
 			System.out.println("消费消息成功");
 		}else{

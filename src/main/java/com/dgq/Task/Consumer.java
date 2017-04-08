@@ -1,12 +1,7 @@
-package com.dgq.rabbitMQ;
+package com.dgq.Task;
 
-import java.io.IOException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.FutureTask;
-
-import javax.annotation.Resource;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Binding;
@@ -15,58 +10,26 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.FanoutExchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.core.env.Environment;
 
-import com.dgq.Task.TaskModel;
+import com.dgq.config.RabbitMQConfig;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.QueueingConsumer;
 
 /**
- * RabbitMQ的配置类
+ * 消费者
  * @author dgq
  *
-	1、@PropertySource("classpath:rabbitmq.properties") : 1、@Value("${rabbitmq.address}")；2、env.getProperty(key)
-	2、@ConfigurationProperties(locations = "classpath:rabbitmq.properties", ignoreUnknownFields = false, prefix = "rabbitmq")
  */
 @Configuration
-@PropertySource("classpath:rabbitmq.properties")
-public class RabbitMQConfig {
-	/** 消息交换机的名字**/
-	public static final String EXCHANGE   = "spring-boot-exchange";
-	
-	/**队列key1**/
-	public static final String ROUTINGKEY1 = "queue-one-key1";
-
-	/**队列key2**/
-	public static final String ROUTINGKEY2 = "queue-one-key2";
-	
-	@Resource
-	private Environment env;
+public class Consumer {
 	
 	private ExecutorService executor = Executors.newFixedThreadPool(10);
-	
-	/**
-	 * 配置连接bean
-	 * @return
-	 */
-	@Bean
-	public ConnectionFactory ConnectionFactory(){
-		CachingConnectionFactory connFac = new CachingConnectionFactory();
-		
-		connFac.setAddresses(env.getProperty("rabbitmq.address"));
-		connFac.setUsername(env.getProperty("rabbitmq.username"));
-		connFac.setPassword(env.getProperty("rabbitmq.password"));
-		connFac.setVirtualHost(env.getProperty("rabbitmq.virtualhost"));
-		connFac.setPublisherConfirms(true);
-		
-		return connFac;
-	}
 	
 	/**
 	 * 配置消费交换机
@@ -79,9 +42,8 @@ public class RabbitMQConfig {
 	 */
 	@Bean
 	public DirectExchange defaultExchange(){
-		return new DirectExchange(EXCHANGE, true, false);
+		return new DirectExchange(RabbitMQConfig.EXCHANGE_NAME, true, false);
 	}
-	
 	
 	@Bean
 	public FanoutExchange getFanoutExchange(){
@@ -148,9 +110,9 @@ public class RabbitMQConfig {
 	 * 针对消费者配置
 	 * @return
 	 */
-	@Bean
-	public SimpleMessageListenerContainer messageContainer1(){
-		SimpleMessageListenerContainer listenerContainer = new SimpleMessageListenerContainer(ConnectionFactory());
+	/*@Bean
+	public SimpleMessageListenerContainer messageContainer1(ConnectionFactory connectionFactory){
+		SimpleMessageListenerContainer listenerContainer = new SimpleMessageListenerContainer(connectionFactory);
 		//设置监听消息队列
 		listenerContainer.setQueues(queue1());
 		//设置是否暴露监听管道
@@ -163,13 +125,11 @@ public class RabbitMQConfig {
 		listenerContainer.setMessageListener(new ChannelAwareMessageListener() {
 			
 			public void onMessage(Message message, Channel channel) throws Exception {
+				
 				byte[] body = message.getBody();
 				
 				channel.basicQos(1);
 				
-				System.out.println(message.getMessageProperties().getDeliveryTag());
-				
-				Thread.sleep(2000);
 				System.out.println("队列1收到消息："+new String(body));
 				 //确认消息成功消费
 				channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
@@ -177,52 +137,35 @@ public class RabbitMQConfig {
 		});
 		
 		return listenerContainer;
-	}
+	}*/
 	
 	/**
-	 * 接收消息的监听，这个监听会接收消息队列2的消息
+	 * 接收消息的监听，监听queue2、queue3、queue4三个队列
 	 * 针对消费者配置
 	 * @return
 	 */
-	@Bean
-	public SimpleMessageListenerContainer messageContainer2(){
-		SimpleMessageListenerContainer listenerContainer = new SimpleMessageListenerContainer(ConnectionFactory());
+	/*@Bean
+	public SimpleMessageListenerContainer messageContainer2(ConnectionFactory connectionFactory){
+		//创建消息监听容器
+		SimpleMessageListenerContainer listenerContainer = new SimpleMessageListenerContainer(connectionFactory);
+		//设置监听容器监听的队列
 		listenerContainer.setQueues(queue2(), queue3(), queue4());
+		
 		listenerContainer.setExposeListenerChannel(true);
 		listenerContainer.setMaxConcurrentConsumers(1);
+		//设置并发消费者数
 		listenerContainer.setConcurrentConsumers(1);
+		// 设置手动回执，默认自动，自动的话：如果消息发出后不管消费者是否消费了rabbitMQ都会删除该条消息，手动：rabbitMQ会等待回执之后才会删除消息
 		listenerContainer.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+		
 		listenerContainer.setMessageListener(new ChannelAwareMessageListener() {
 			public void onMessage(Message message, Channel channel) throws Exception {
-				
+				channel.basicQos(1);
 
 				executor.submit(new TaskModel(message, channel));
 			}
 		});
 		
 		return listenerContainer;
-	}
-	
-	public String task(Message message, Channel channel) throws IOException{
-		byte[] body = message.getBody();
-		
-		System.out.println(message.getMessageProperties().getDeliveryTag());
-		
-		System.out.println("队列2收到消息："+new String(body));
-		
-		channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
-		
-		return null;
-	}
-	public static String getExchange() {
-		return EXCHANGE;
-	}
-
-	public static String getRoutingkey1() {
-		return ROUTINGKEY1;
-	}
-
-	public static String getRoutingkey2() {
-		return ROUTINGKEY2;
-	}
+	}*/
 }
